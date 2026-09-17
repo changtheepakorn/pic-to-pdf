@@ -1,0 +1,23 @@
+# Python Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output PDFs
+output/
+*.pdf
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Scratch / Temp
+scratch/
+.idea/
+.vscode/

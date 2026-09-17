@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ไม่รกจอ Pic to PDF by Chang</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    html.dark body {
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    html:not(.dark) body {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    .paper-shadow {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+    html.dark .paper-shadow {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Checkerboard pattern for preview background */
+    html.dark .checker-bg {
+      background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%),
+                        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+                        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    html:not(.dark) .checker-bg {
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    /* Drag and drop styling */
+    .drag-over-active {
+      outline: 2px dashed #6366f1 !important;
+      outline-offset: 2px !important;
+      transform: scale(1.04);
+      transition: transform 0.15s ease;
+    }
+
+    /* Print Stylesheet for Direct Print from Browser */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      body > *:not(#directPrintContainer) {
+        display: none !important;
+      }
+      #directPrintContainer {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+      }
+      .print-page-sheet {
+        page-break-after: always;
+        break-after: page;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        position: relative !important;
+      }
+    }
+    @media screen {
+      #directPrintContainer {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between sticky top-0 z-50 transition-colors">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 flex items-center gap-2">
+          <span>ไม่รกจอ Pic to PDF</span>
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">by Chang</span>
+        </h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400">ดึงรูปจาก URL / ลากสลับตำแหน่งรูป / จัดตาราง Grid / พิมพ์ทันที</p>
+      </div>
+    </div>
+
+    <!-- Top Action Buttons & Theme Toggle -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Light / Dark Mode Toggle Button -->
+      <button onclick="toggleTheme()" id="themeToggleBtn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center space-x-1.5 transition cursor-pointer shadow-sm" title="สลับโหมดสว่าง / โหมดมืด">
+        <span id="themeIcon" class="text-sm">🌙</span>
+        <span id="themeText" class="hidden sm:inline">โหมดมืด</span>
+      </button>
+
+      <!-- Direct Print Button -->
+      <button onclick="triggerDirectPrint()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-sm shadow-lg shadow-emerald-600/25 flex items-center space-x-2 transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        <span>🖨️ สั่งพิมพ์ทันที</span>
+      </button>
+
+      <!-- Generate & Download PDF Button -->
+      <button id="btnExportTop" onclick="generatePdf()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-sm shadow-lg shadow-indigo-600/25 flex items-center space-x-2 transition-all cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>ดาวน์โหลด PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Left Sidebar: Controls & Settings -->
+    <aside class="w-full lg:w-[500px] bg-slate-50 dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800 flex flex-col h-auto lg:h-[calc(100vh-65px)] overflow-y-auto transition-colors">
+      
+      <div class="p-5 space-y-5">
+
+        <!-- 1. Image Source & Gallery Section -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">1</span>
+              <span>รูปภาพ (เพิ่ม URL หรือ อัปโหลดจากเครื่อง)</span>
+            </label>
+            <span id="imgCountBadge" class="text-xs font-medium px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 border border-slate-200 dark:border-slate-700 shadow-sm">0 รูปภาพ</span>
+          </div>
+
+          <!-- URL Input Group -->
+          <div class="space-y-2">
+            <div class="flex space-x-2">
+              <div class="relative flex-1">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <input type="url" id="imageUrlInput" placeholder="วาง URL รูป เช่น https://... หรือกดวางหลายลิงก์" 
+                       class="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              </div>
+              <button id="btnFetchUrl" onclick="addSingleUrl()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition cursor-pointer flex items-center space-x-1 shrink-0 shadow-sm">
+                <span id="fetchBtnText">+ เพิ่มรูป</span>
+                <svg id="fetchSpinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Multi-URL Dropdown Toggle / Upload Multi-Files -->
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <button onclick="toggleBulkUrlBox()" class="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 cursor-pointer">
+                <span>📝 วางทีละหลาย URL (1 บรรทัดต่อ 1 รูป)</span>
+              </button>
+              <label class="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center space-x-1">
+                <span>📁 อัปโหลดหลายรูปพร้อมกัน</span>
+                <input type="file" id="localFileInput" accept="image/*" multiple class="hidden" onchange="handleLocalFiles(event)">
+              </label>
+            </div>
+
+            <!-- Bulk URL Textarea Container -->
+            <div id="bulkUrlBox" class="hidden p-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2 shadow-sm">
+              <textarea id="bulkUrlInput" rows="3" placeholder="วางลิงก์รูปภาพที่นี่ บรรทัดละ 1 ลิงก์...&#10;https://example.com/pic1.jpg&#10;https://example.com/pic2.jpg" class="w-full p-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
+              <div class="flex justify-end space-x-2">
+                <button onclick="toggleBulkUrlBox()" class="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">ยกเลิก</button>
+                <button onclick="addBulkUrls()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium">เพิ่มทุกลิงก์</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Sample Presets -->
+          <div class="pt-0.5">
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1 flex items-center justify-between">
+              <span>ทดลองโหลดรูปตัวอย่างรวดเร็ว:</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="loadSampleSingle()" class="px-2 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 truncate cursor-pointer transition shadow-xs">
+                🌄 1 รูปเดี่ยว
+              </button>
+              <button onclick="loadSampleGrid4()" class="px-2 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 truncate cursor-pointer transition shadow-xs">
+                🖼️ ชุด 4 รูป (2×2)
+              </button>
+              <button onclick="loadSampleGrid6()" class="px-2 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 truncate cursor-pointer transition shadow-xs">
+                🎨 ชุด 6 รูป (2×3)
+              </button>
+            </div>
+          </div>
+
+          <!-- Image Thumbnails List / Gallery with Drag & Drop -->
+          <div id="imageGalleryWrapper" class="space-y-1.5 pt-1">
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span class="flex items-center gap-1">
+                <span>รายการรูปภาพ:</span>
+                <span class="text-[10px] text-indigo-500 font-normal">✋ ลากรูปเพื่อสลับลำดับได้</span>
+              </span>
+              <button onclick="clearAllImages()" class="text-red-500 hover:text-red-600 text-[11px] cursor-pointer">ล้างทั้งหมด</button>
+            </div>
+            <div id="imageGallery" class="flex flex-wrap gap-2.5 min-h-16 max-h-48 overflow-y-auto p-2.5 bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl scrollbar-thin shadow-inner transition-colors">
+              <!-- Dynamically populated draggable image cards -->
+              <div id="noImagesNotice" class="w-full py-4 text-center text-xs text-slate-400">
+                ยังไม่มีรูปภาพ กรุณากรอก URL หรืออัปโหลดรูป
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <hr class="border-slate-200 dark:border-slate-800">
+
+        <!-- 2. Pics Per Page & Grid Layout -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">2</span>
+              <span>จำนวนรูปต่อหน้า & คอลัมน์ (Pic Per Page)</span>
+            </label>
+            <span id="gridSummaryBadge" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium">1 รูป/หน้า (1×1)</span>
+          </div>
+
+          <!-- Quick Grid Preset Buttons -->
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" id="gridPreset_1x1" onclick="setGridPreset(1, 1)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs">
+              <div class="font-bold text-xs">1 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">1×1</div>
+            </button>
+            <button type="button" id="gridPreset_1x2" onclick="setGridPreset(1, 2)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">2 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">1×2 ตั้ง</div>
+            </button>
+            <button type="button" id="gridPreset_2x1" onclick="setGridPreset(2, 1)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">2 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">2×1 นอน</div>
+            </button>
+            <button type="button" id="gridPreset_2x2" onclick="setGridPreset(2, 2)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">4 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">2×2</div>
+            </button>
+            <button type="button" id="gridPreset_2x3" onclick="setGridPreset(2, 3)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">6 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">2×3</div>
+            </button>
+            <button type="button" id="gridPreset_3x2" onclick="setGridPreset(3, 2)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">6 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">3×2</div>
+            </button>
+            <button type="button" id="gridPreset_3x3" onclick="setGridPreset(3, 3)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">9 รูป</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">3×3</div>
+            </button>
+            <button type="button" id="gridPreset_custom" onclick="toggleCustomGrid(true)" class="grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+              <div class="font-bold text-xs">กำหนดเอง</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">C × R</div>
+            </button>
+          </div>
+
+          <!-- Custom Grid Input Box -->
+          <div id="customGridBox" class="hidden p-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2 shadow-xs">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label class="text-slate-600 dark:text-slate-400 block mb-1">จำนวนคอลัมน์ (Cols):</label>
+                <input type="number" id="customColsInput" value="2" min="1" max="10" oninput="handleCustomGridInput()" class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100">
+              </div>
+              <div>
+                <label class="text-slate-600 dark:text-slate-400 block mb-1">จำนวนแถว (Rows):</label>
+                <input type="number" id="customRowsInput" value="2" min="1" max="10" oninput="handleCustomGridInput()" class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Image Gap Setting -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-slate-600 dark:text-slate-400">ระยะห่างระหว่างรูป (Gap):</span>
+              <span id="gapValText" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">2 มม.</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setGap(0)" class="gap-btn flex-1 py-1 px-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">0 มม.</button>
+              <button type="button" onclick="setGap(2)" class="gap-btn flex-1 py-1 px-1 rounded-lg bg-indigo-600 text-white text-xs font-medium cursor-pointer transition">2 มม.</button>
+              <button type="button" onclick="setGap(5)" class="gap-btn flex-1 py-1 px-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">5 มม.</button>
+              <button type="button" onclick="setGap(10)" class="gap-btn flex-1 py-1 px-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">10 มม.</button>
+              <input type="number" id="customGapInput" value="2" min="0" max="50" oninput="handleCustomGapInput()" class="w-14 px-1.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-center text-slate-800 dark:text-slate-200">
+            </div>
+          </div>
+        </section>
+
+        <hr class="border-slate-200 dark:border-slate-800">
+
+        <!-- 3. Paper Size & Orientation -->
+        <section class="space-y-3.5">
+          <label class="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">3</span>
+            <span>ขนาดหน้ากระดาษ (Paper Size)</span>
+          </label>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-600 dark:text-slate-400 mb-1 block">มาตรฐานกระดาษ</label>
+              <select id="paperSizeSelect" onchange="handlePaperSizeChange()" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <optgroup label="มาตรฐาน ISO">
+                  <option value="A4" selected>A4 (210 × 297 มม.) - ทั่วไป</option>
+                  <option value="A3">A3 (297 × 420 มม.) - ใหญ่</option>
+                  <option value="A5">A5 (148 × 210 มม.) - พกพา</option>
+                  <option value="A6">A6 (105 × 148 มม.) - โปสการ์ด</option>
+                  <option value="B4">B4 (250 × 353 มม.)</option>
+                  <option value="B5">B5 (176 × 250 มม.)</option>
+                </optgroup>
+                <optgroup label="มาตรฐานสหรัฐฯ (US)">
+                  <option value="LETTER">US Letter (8.5 × 11 นิ้ว)</option>
+                  <option value="LEGAL">US Legal (8.5 × 14 นิ้ว)</option>
+                  <option value="TABLOID">Tabloid (11 × 17 นิ้ว)</option>
+                </optgroup>
+                <optgroup label="ขนาดรูปถ่าย (Photo)">
+                  <option value="4X6">รูป 4 × 6 นิ้ว (โปสการ์ด)</option>
+                  <option value="5X7">รูป 5 × 7 นิ้ว</option>
+                  <option value="8X10">รูป 8 × 10 นิ้ว</option>
+                  <option value="SQUARE">จัตุรัส Square (210 × 210 มม.)</option>
+                </optgroup>
+                <optgroup label="กำหนดเอง">
+                  <option value="CUSTOM">Custom (กำหนดขนาดเอง...)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Orientation Toggle -->
+            <div>
+              <label class="text-xs text-slate-600 dark:text-slate-400 mb-1 block">ทิศทางกระดาษ</label>
+              <div class="grid grid-cols-2 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl border border-slate-300 dark:border-slate-700">
+                <button type="button" id="btnPortrait" onclick="setOrientation('portrait')" class="py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 bg-indigo-600 text-white shadow-xs">
+                  <span>📄</span>
+                  <span>แนวตั้ง</span>
+                </button>
+                <button type="button" id="btnLandscape" onclick="setOrientation('landscape')" class="py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                  <span>📃</span>
+                  <span>แนวนอน</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Dimensions Container -->
+          <div id="customSizeContainer" class="hidden p-3 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2 shadow-xs">
+            <div class="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+              <span class="font-medium">ขนาดกระดาษกำหนดเอง:</span>
+              <div class="flex items-center space-x-2">
+                <label class="cursor-pointer flex items-center space-x-1">
+                  <input type="radio" name="customUnit" value="mm" checked onchange="handleUnitChange()" class="accent-indigo-500">
+                  <span>มม.</span>
+                </label>
+                <label class="cursor-pointer flex items-center space-x-1">
+                  <input type="radio" name="customUnit" value="inch" onchange="handleUnitChange()" class="accent-indigo-500">
+                  <span>นิ้ว</span>
+                </label>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5">กว้าง</span>
+                <input type="number" id="customWidthInput" value="210" min="10" step="any" oninput="updatePreview()" class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100">
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5">สูง</span>
+                <input type="number" id="customHeightInput" value="297" min="10" step="any" oninput="updatePreview()" class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Margin Controls -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-slate-600 dark:text-slate-400">ระยะขอบกระดาษ (Margin):</span>
+              <span id="marginValText" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">10 มม.</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setMargin(0)" class="margin-btn flex-1 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">0 มม.</button>
+              <button type="button" onclick="setMargin(5)" class="margin-btn flex-1 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">5 มม.</button>
+              <button type="button" onclick="setMargin(10)" class="margin-btn flex-1 py-1 rounded-lg bg-indigo-600 text-white text-xs font-medium cursor-pointer transition shadow-xs">10 มม.</button>
+              <button type="button" onclick="setMargin(15)" class="margin-btn flex-1 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">15 มม.</button>
+              <button type="button" onclick="setMargin(20)" class="margin-btn flex-1 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition">20 มม.</button>
+              <input type="number" id="customMarginInput" value="10" min="0" max="100" oninput="handleCustomMarginInput()" class="w-14 px-1.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-center text-slate-800 dark:text-slate-200">
+            </div>
+          </div>
+
+          <!-- Fit Mode Selection -->
+          <div>
+            <span class="text-xs text-slate-600 dark:text-slate-400 mb-1.5 block">โหมดการวางภาพในช่อง</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" id="fitMode_fit" onclick="setFitMode('fit')" class="p-2 rounded-xl border text-left transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs">
+                <div class="font-medium text-xs">🔍 Fit (พอดีช่อง)</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">คงสัดส่วนเดิม มีขอบ</div>
+              </button>
+              <button type="button" id="fitMode_fill" onclick="setFitMode('fill')" class="p-2 rounded-xl border text-left transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+                <div class="font-medium text-xs">📐 Fill (เต็มช่อง)</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">ขยายเต็ม ตัดส่วนเกิน</div>
+              </button>
+              <button type="button" id="fitMode_stretch" onclick="setFitMode('stretch')" class="p-2 rounded-xl border text-left transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600">
+                <div class="font-medium text-xs">↔️ Stretch (ยืด)</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">ยืดเต็มขอบช่อง</div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <hr class="border-slate-200 dark:border-slate-800">
+
+        <!-- 4. Print & Export Action Buttons -->
+        <section class="space-y-3 pb-6">
+          <label class="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">4</span>
+            <span>พิมพ์ หรือ บันทึกไฟล์</span>
+          </label>
+
+          <!-- Direct Print Main Button -->
+          <button type="button" onclick="triggerDirectPrint()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center space-x-2 transition cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>🖨️ สั่งพิมพ์จากหน้าเว็บทันที (ไม่ต้องรอดาวน์โหลด)</span>
+          </button>
+
+          <!-- PDF Download Button -->
+          <div class="pt-1">
+            <div class="flex items-center space-x-2 mb-2">
+              <input type="text" id="pdfFilenameInput" value="pic_to_pdf_document.pdf" class="flex-1 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100">
+            </div>
+            <button id="btnGeneratePdf" onclick="generatePdf()" class="w-full py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/40 font-medium text-xs flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span id="genBtnText">บันทึกเป็นไฟล์ PDF (Save as PDF file)</span>
+              <svg id="genSpinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+    <!-- Right Area: Interactive Paper Preview Stage -->
+    <section class="flex-1 flex flex-col bg-slate-100 dark:bg-slate-950 checker-bg relative overflow-hidden transition-colors">
+      
+      <!-- Stage Info & Toolbar -->
+      <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800/80 px-6 py-2.5 flex items-center justify-between z-10 transition-colors">
+        <div class="flex items-center space-x-3 text-xs text-slate-600 dark:text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="previewPageSpec" class="font-medium text-slate-800 dark:text-white">A4 แนวตั้ง (210 × 297 มม.)</span>
+          <span class="text-slate-300 dark:text-slate-600">|</span>
+          <span id="previewGridSpec" class="text-indigo-600 dark:text-indigo-400 font-medium">Grid: 1×1 (1 รูป/หน้า)</span>
+          <span class="text-slate-300 dark:text-slate-600">|</span>
+          <span id="previewPaginationSpec" class="text-slate-500 dark:text-slate-400">หน้า 1 / 1</span>
+        </div>
+
+        <!-- Page Navigator & Zoom Controls -->
+        <div class="flex items-center space-x-3">
+          <!-- Page pagination navigator -->
+          <div id="pageNavControls" class="flex items-center space-x-1.5 bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
+            <button onclick="prevPreviewPage()" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs px-1 cursor-pointer" title="หน้าก่อนหน้า">◀</button>
+            <span id="pageNavText" class="text-xs font-mono text-slate-700 dark:text-slate-200">1 / 1</span>
+            <button onclick="nextPreviewPage()" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs px-1 cursor-pointer" title="หน้าถัดไป">▶</button>
+          </div>
+
+          <div class="flex items-center space-x-1 bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
+            <button onclick="adjustZoom(-0.1)" class="text-slate-600 dark:text-slate-300 text-xs px-1 cursor-pointer" title="Zoom Out">-</button>
+            <span id="zoomLevelText" class="text-xs text-slate-700 dark:text-slate-300 font-mono w-10 text-center">100%</span>
+            <button onclick="adjustZoom(0.1)" class="text-slate-600 dark:text-slate-300 text-xs px-1 cursor-pointer" title="Zoom In">+</button>
+            <button onclick="resetZoom()" class="text-slate-600 dark:text-slate-300 text-xs px-1 cursor-pointer hover:text-slate-900 dark:hover:text-white" title="Fit">Fit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Canvas Viewport -->
+      <div id="previewViewport" class="flex-1 overflow-auto p-8 flex items-center justify-center relative">
+        
+        <!-- The Simulated Paper Sheet -->
+        <div id="paperSheet" class="bg-white paper-shadow transition-all duration-150 relative flex items-center justify-center origin-center select-none" style="width: 420px; height: 594px;">
+          
+          <!-- Margin Boundary Guide -->
+          <div id="paperMarginBox" class="absolute inset-0 border border-dashed border-indigo-400/40 pointer-events-none transition-all duration-150 overflow-hidden">
+            
+            <!-- Grid Container for Images -->
+            <div id="gridContainer" class="w-full h-full grid relative overflow-hidden pointer-events-auto">
+              <!-- Dynamically populated grid cells -->
+            </div>
+
+          </div>
+
+          <!-- Empty State Indicator (when 0 images) -->
+          <div id="emptyGridPrompt" class="text-center p-6 text-slate-400 pointer-events-none absolute">
+            <svg class="w-16 h-16 mx-auto mb-2 text-slate-300 stroke-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p class="text-sm font-medium text-slate-500">ยังไม่ได้ใส่รูปภาพ</p>
+            <p class="text-xs text-slate-400 mt-1">วาง URL รูป หรือกดปุ่ม "ชุดรูปตัวอย่าง" ทางซ้าย</p>
+          </div>
+
+          <!-- Paper watermark badge in corner -->
+          <div class="absolute bottom-2 right-3 text-[10px] font-mono text-slate-400 pointer-events-none opacity-60">
+            <span id="paperCornerLabel">A4 (210x297mm)</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Quick Tips Bar -->
+      <div class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 py-2.5 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between transition-colors">
+        <span>💡 <b>เคล็ดลับ:</b> สามารถคลิกลากรูปเพื่อจัดลำดับตำแหน่งใหม่ได้ และกดสลับโหมด ☀️ สว่าง / 🌙 มืด ได้ที่มุมบนขวา</span>
+        <span class="text-slate-400 dark:text-slate-500 font-medium">ไม่รกจอ Pic to PDF by Chang</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Container for Direct Browser Printing (dynamically populated before window.print) -->
+  <div id="directPrintContainer"></div>
+
+  <!-- Dynamic @page CSS style tag for Direct Print -->
+  <style id="dynamicPrintStyle"></style>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-900 dark:bg-slate-800 border border-slate-700 text-white text-sm shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none flex items-center space-x-3 z-50">
+    <span id="toastIcon">ℹ️</span>
+    <span id="toastMsg">ข้อความ</span>
+  </div>
+
+  <script>
+    // Standard paper dimensions in mm (Portrait: width, height)
+    const PAPER_DIMENSIONS = {
+      'A3': [297, 420],
+      'A4': [210, 297],
+      'A5': [148, 210],
+      'A6': [105, 148],
+      'B4': [250, 353],
+      'B5': [176, 250],
+      'LETTER': [215.9, 279.4],
+      'LEGAL': [215.9, 355.6],
+      'TABLOID': [279.4, 431.8],
+      '4X6': [101.6, 152.4],
+      '5X7': [127, 177.8],
+      '8X10': [203.2, 254],
+      'SQUARE': [210, 210]
+    };
+
+    // State
+    let imageList = []; // List of image objects: { id, source, previewUrl, width, height }
+    let layoutConfig = {
+      gridCols: 1,
+      gridRows: 1,
+      gapMm: 2,
+      size: 'A4',
+      orientation: 'portrait',
+      marginMm: 10,
+      fitMode: 'fit',
+      customWidthMm: 210,
+      customHeightMm: 297
+    };
+    let currentPreviewPage = 0; // 0-indexed preview page
+    let zoomScale = 1.0;
+    let draggedIndex = null;
+
+    // Elements
+    const imageUrlInput = document.getElementById('imageUrlInput');
+    const bulkUrlBox = document.getElementById('bulkUrlBox');
+    const bulkUrlInput = document.getElementById('bulkUrlInput');
+    const imageGallery = document.getElementById('imageGallery');
+    const noImagesNotice = document.getElementById('noImagesNotice');
+    const imgCountBadge = document.getElementById('imgCountBadge');
+    const paperSizeSelect = document.getElementById('paperSizeSelect');
+    const btnPortrait = document.getElementById('btnPortrait');
+    const btnLandscape = document.getElementById('btnLandscape');
+    const customSizeContainer = document.getElementById('customSizeContainer');
+    const customWidthInput = document.getElementById('customWidthInput');
+    const customHeightInput = document.getElementById('customHeightInput');
+    const customMarginInput = document.getElementById('customMarginInput');
+    const marginValText = document.getElementById('marginValText');
+    const customGapInput = document.getElementById('customGapInput');
+    const gapValText = document.getElementById('gapValText');
+    const customGridBox = document.getElementById('customGridBox');
+    const customColsInput = document.getElementById('customColsInput');
+    const customRowsInput = document.getElementById('customRowsInput');
+    const paperSheet = document.getElementById('paperSheet');
+    const paperMarginBox = document.getElementById('paperMarginBox');
+    const gridContainer = document.getElementById('gridContainer');
+    const emptyGridPrompt = document.getElementById('emptyGridPrompt');
+    const previewPageSpec = document.getElementById('previewPageSpec');
+    const previewGridSpec = document.getElementById('previewGridSpec');
+    const previewPaginationSpec = document.getElementById('previewPaginationSpec');
+    const pageNavText = document.getElementById('pageNavText');
+    const paperCornerLabel = document.getElementById('paperCornerLabel');
+    const gridSummaryBadge = document.getElementById('gridSummaryBadge');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+
+    function init() {
+      // 1. Initialize Theme from localStorage or system preference
+      initTheme();
+
+      // 2. Default: Load 1 sample image
+      loadSampleSingle();
+      updateGridButtonsUI();
+      updatePreview();
+    }
+
+    // ==========================================
+    // Theme Switcher (Light / Dark Mode)
+    // ==========================================
+    function initTheme() {
+      const savedTheme = localStorage.getItem('pic2pdf_theme') || 'dark';
+      applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const newTheme = isDark ? 'light' : 'dark';
+      applyTheme(newTheme);
+      localStorage.setItem('pic2pdf_theme', newTheme);
+      showToast(newTheme === 'dark' ? 'เปลี่ยนเป็นโหมดมืดเรียบร้อย' : 'เปลี่ยนเป็นโหมดสว่างเรียบร้อย', newTheme === 'dark' ? '🌙' : '☀️');
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        themeIcon.textContent = '🌙';
+        themeText.textContent = 'โหมดมืด';
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeIcon.textContent = '☀️';
+        themeText.textContent = 'โหมดสว่าง';
+      }
+      updatePreview();
+    }
+
+    function getPicsPerPage() {
+      return layoutConfig.gridCols * layoutConfig.gridRows;
+    }
+
+    function getTotalPages() {
+      const ppp = getPicsPerPage();
+      if (imageList.length === 0) return 1;
+      return Math.ceil(imageList.length / ppp);
+    }
+
+    // ==========================================
+    // Image Management & Drag-and-Drop Reordering
+    // ==========================================
+    async function addSingleUrl() {
+      const url = imageUrlInput.value.trim();
+      if (!url) {
+        showToast('กรุณาระบุ URL รูปภาพ', '⚠️');
+        return;
+      }
+      setFetchLoading(true);
+      await fetchAndAddImage(url);
+      imageUrlInput.value = '';
+      setFetchLoading(false);
+    }
+
+    function toggleBulkUrlBox() {
+      bulkUrlBox.classList.toggle('hidden');
+    }
+
+    async function addBulkUrls() {
+      const text = bulkUrlInput.value.trim();
+      if (!text) return;
+      const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+      if (urls.length === 0) return;
+
+      setFetchLoading(true);
+      bulkUrlBox.classList.add('hidden');
+      bulkUrlInput.value = '';
+
+      let successCount = 0;
+      for (const u of urls) {
+        const ok = await fetchAndAddImage(u, false);
+        if (ok) successCount++;
+      }
+      setFetchLoading(false);
+      renderGallery();
+      updatePreview();
+      showToast(`นำเข้าสำเร็จ ${successCount} รูปภาพ`, '✅');
+    }
+
+    async function fetchAndAddImage(url, updateUi = true) {
+      try {
+        const resp = await fetch('/api/fetch-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          imageList.push({
+            id: Date.now() + Math.random(),
+            source: data.original_source,
+            previewUrl: data.preview_data_url,
+            width: data.width,
+            height: data.height
+          });
+          if (updateUi) {
+            renderGallery();
+            updatePreview();
+            showToast('เพิ่มรูปภาพเรียบร้อย!', '✅');
+          }
+          return true;
+        } else {
+          showToast(data.error || 'ไม่สามารถโหลดรูปภาพได้', '❌');
+          return false;
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('เชื่อมต่อเซิร์ฟเวอร์ขัดข้อง', '❌');
+        return false;
+      }
+    }
+
+    function handleLocalFiles(e) {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      let loaded = 0;
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const dataUrl = evt.target.result;
+          const img = new Image();
+          img.onload = function() {
+            imageList.push({
+              id: Date.now() + Math.random(),
+              source: dataUrl,
+              previewUrl: dataUrl,
+              width: img.naturalWidth,
+              height: img.naturalHeight
+            });
+            loaded++;
+            if (loaded === files.length) {
+              renderGallery();
+              updatePreview();
+              showToast(`โหลดรูปจากเครื่องสำเร็จ ${loaded} รูป`, '✅');
+            }
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = '';
+    }
+
+    function removeImage(index) {
+      imageList.splice(index, 1);
+      const totalP = getTotalPages();
+      if (currentPreviewPage >= totalP) {
+        currentPreviewPage = Math.max(0, totalP - 1);
+      }
+      renderGallery();
+      updatePreview();
+    }
+
+    function moveImage(index, offset) {
+      const targetIndex = index + offset;
+      if (targetIndex < 0 || targetIndex >= imageList.length) return;
+      const item = imageList.splice(index, 1)[0];
+      imageList.splice(targetIndex, 0, item);
+      renderGallery();
+      updatePreview();
+    }
+
+    function clearAllImages() {
+      imageList = [];
+      currentPreviewPage = 0;
+      renderGallery();
+      updatePreview();
+      showToast('ล้างรูปภาพทั้งหมดแล้ว', '🗑️');
+    }
+
+    // Render Drag-and-Drop Image Gallery
+    function renderGallery() {
+      imgCountBadge.textContent = `${imageList.length} รูปภาพ`;
+      if (imageList.length === 0) {
+        imageGallery.innerHTML = '<div id="noImagesNotice" class="w-full py-4 text-center text-xs text-slate-400">ยังไม่มีรูปภาพ กรุณากรอก URL หรืออัปโหลดรูป</div>';
+        return;
+      }
+
+      imageGallery.innerHTML = '';
+      imageList.forEach((img, idx) => {
+        const item = document.createElement('div');
+        item.draggable = true;
+        item.className = 'gallery-item relative group w-16 h-16 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex-shrink-0 cursor-grab active:cursor-grabbing shadow-xs select-none transition-all duration-150';
+        item.dataset.index = idx;
+        
+        item.innerHTML = `
+          <img src="${img.previewUrl}" class="w-full h-full object-cover pointer-events-none">
+          
+          <!-- Order Badge -->
+          <div class="absolute bottom-0 left-0 bg-black/75 backdrop-blur-xs text-white text-[10px] font-mono px-1.5 py-0.5 rounded-tr font-bold leading-none">
+            #${idx + 1}
+          </div>
+
+          <!-- Drag Handle Indicator on top left -->
+          <div class="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition text-[10px] text-white bg-black/60 rounded px-1 pointer-events-none">
+            ⠿
+          </div>
+
+          <!-- Quick Shift & Delete Controls Overlay -->
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-1 p-1">
+            ${idx > 0 ? `
+              <button onclick="event.stopPropagation(); moveImage(${idx}, -1)" class="p-1 rounded bg-slate-800 text-white hover:bg-indigo-600 text-[10px] cursor-pointer" title="ย้ายไปซ้าย">◀</button>
+            ` : ''}
+            <button onclick="event.stopPropagation(); removeImage(${idx})" class="p-1 rounded bg-red-600 text-white hover:bg-red-500 text-[10px] cursor-pointer" title="ลบรูปนี้">✕</button>
+            ${idx < imageList.length - 1 ? `
+              <button onclick="event.stopPropagation(); moveImage(${idx}, 1)" class="p-1 rounded bg-slate-800 text-white hover:bg-indigo-600 text-[10px] cursor-pointer" title="ย้ายไปขวา">▶</button>
+            ` : ''}
+          </div>
+        `;
+
+        // HTML5 Drag and Drop Handlers
+        item.addEventListener('dragstart', (e) => {
+          draggedIndex = idx;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', idx);
+          setTimeout(() => {
+            item.classList.add('opacity-40', 'scale-95');
+          }, 0);
+        });
+
+        item.addEventListener('dragend', () => {
+          item.classList.remove('opacity-40', 'scale-95');
+          document.querySelectorAll('.gallery-item').forEach(el => {
+            el.classList.remove('drag-over-active');
+          });
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        item.addEventListener('dragenter', (e) => {
+          e.preventDefault();
+          if (draggedIndex !== idx) {
+            item.classList.add('drag-over-active');
+          }
+        });
+
+        item.addEventListener('dragleave', () => {
+          item.classList.remove('drag-over-active');
+        });
+
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          item.classList.remove('drag-over-active');
+          if (draggedIndex === null || draggedIndex === idx) return;
+
+          // Reorder the list
+          const movedItem = imageList.splice(draggedIndex, 1)[0];
+          imageList.splice(idx, 0, movedItem);
+
+          renderGallery();
+          updatePreview();
+          showToast(`สลับตำแหน่งรูปภาพเรียบร้อย (#${draggedIndex + 1} ➔ #${idx + 1})`, '🔄');
+          draggedIndex = null;
+        });
+
+        imageGallery.appendChild(item);
+      });
+    }
+
+    // Quick Sample Loaders
+    async function loadSampleSingle() {
+      imageList = [];
+      setFetchLoading(true);
+      await fetchAndAddImage('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop', false);
+      setGridPreset(1, 1);
+      setFetchLoading(false);
+      renderGallery();
+      updatePreview();
+    }
+
+    async function loadSampleGrid4() {
+      imageList = [];
+      setFetchLoading(true);
+      const samples = [
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop'
+      ];
+      for (const s of samples) {
+        await fetchAndAddImage(s, false);
+      }
+      setGridPreset(2, 2);
+      setFetchLoading(false);
+      renderGallery();
+      updatePreview();
+      showToast('โหลดชุดตัวอย่าง 4 รูปเรียบร้อย (จัด 2×2)', '🖼️');
+    }
+
+    async function loadSampleGrid6() {
+      imageList = [];
+      setFetchLoading(true);
+      const samples = [
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=800&auto=format&fit=crop'
+      ];
+      for (const s of samples) {
+        await fetchAndAddImage(s, false);
+      }
+      setGridPreset(2, 3);
+      setFetchLoading(false);
+      renderGallery();
+      updatePreview();
+      showToast('โหลดชุดตัวอย่าง 6 รูปเรียบร้อย (จัด 2×3)', '🎨');
+    }
+
+    // Grid Layout & Preset Handling
+    function setGridPreset(cols, rows) {
+      layoutConfig.gridCols = cols;
+      layoutConfig.gridRows = rows;
+      toggleCustomGrid(false);
+      updateGridButtonsUI();
+      updatePreview();
+    }
+
+    function toggleCustomGrid(show) {
+      if (show) {
+        customGridBox.classList.remove('hidden');
+        customColsInput.value = layoutConfig.gridCols;
+        customRowsInput.value = layoutConfig.gridRows;
+        document.querySelectorAll('.grid-btn').forEach(b => {
+          b.className = 'grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600';
+        });
+        document.getElementById('gridPreset_custom').className = 'grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs';
+      } else {
+        customGridBox.classList.add('hidden');
+      }
+    }
+
+    function handleCustomGridInput() {
+      const c = parseInt(customColsInput.value) || 1;
+      const r = parseInt(customRowsInput.value) || 1;
+      layoutConfig.gridCols = Math.max(1, c);
+      layoutConfig.gridRows = Math.max(1, r);
+      updatePreview();
+    }
+
+    function updateGridButtonsUI() {
+      const key = `${layoutConfig.gridCols}x${layoutConfig.gridRows}`;
+      document.querySelectorAll('.grid-btn').forEach(b => {
+        b.className = 'grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600';
+      });
+      const activeBtn = document.getElementById(`gridPreset_${key}`);
+      if (activeBtn) {
+        activeBtn.className = 'grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs';
+        customGridBox.classList.add('hidden');
+      } else {
+        document.getElementById('gridPreset_custom').className = 'grid-btn p-2 rounded-xl border text-center transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs';
+        customGridBox.classList.remove('hidden');
+      }
+      gridSummaryBadge.textContent = `${layoutConfig.gridCols * layoutConfig.gridRows} รูป/หน้า (${layoutConfig.gridCols}×${layoutConfig.gridRows})`;
+    }
+
+    function setGap(val) {
+      layoutConfig.gapMm = val;
+      customGapInput.value = val;
+      gapValText.textContent = `${val} มม.`;
+      updateGapButtonsUI(val);
+      updatePreview();
+    }
+
+    function handleCustomGapInput() {
+      let val = parseFloat(customGapInput.value) || 0;
+      if (val < 0) val = 0;
+      layoutConfig.gapMm = val;
+      gapValText.textContent = `${val} มม.`;
+      updateGapButtonsUI(val);
+      updatePreview();
+    }
+
+    function updateGapButtonsUI(val) {
+      document.querySelectorAll('.gap-btn').forEach(btn => {
+        const bVal = parseInt(btn.textContent);
+        if (bVal === val) {
+          btn.className = 'gap-btn flex-1 py-1 px-1 rounded-lg bg-indigo-600 text-white text-xs font-medium cursor-pointer transition shadow-xs';
+        } else {
+          btn.className = 'gap-btn flex-1 py-1 px-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition';
+        }
+      });
+    }
+
+    // Paper Size & Orientation
+    function handlePaperSizeChange() {
+      layoutConfig.size = paperSizeSelect.value;
+      if (layoutConfig.size === 'CUSTOM') {
+        customSizeContainer.classList.remove('hidden');
+        layoutConfig.customWidthMm = parseFloat(customWidthInput.value) || 210;
+        layoutConfig.customHeightMm = parseFloat(customHeightInput.value) || 297;
+      } else {
+        customSizeContainer.classList.add('hidden');
+      }
+      updatePreview();
+    }
+
+    function handleUnitChange() {
+      const unit = document.querySelector('input[name="customUnit"]:checked').value;
+      if (unit === 'inch') {
+        customWidthInput.value = (layoutConfig.customWidthMm / 25.4).toFixed(2);
+        customHeightInput.value = (layoutConfig.customHeightMm / 25.4).toFixed(2);
+      } else {
+        customWidthInput.value = layoutConfig.customWidthMm;
+        customHeightInput.value = layoutConfig.customHeightMm;
+      }
+      updatePreview();
+    }
+
+    function setOrientation(orient) {
+      layoutConfig.orientation = orient;
+      if (orient === 'landscape') {
+        btnLandscape.className = 'py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 bg-indigo-600 text-white shadow-xs';
+        btnPortrait.className = 'py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200';
+      } else {
+        btnPortrait.className = 'py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 bg-indigo-600 text-white shadow-xs';
+        btnLandscape.className = 'py-1 px-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center space-x-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200';
+      }
+      updatePreview();
+    }
+
+    function setMargin(val) {
+      layoutConfig.marginMm = val;
+      customMarginInput.value = val;
+      marginValText.textContent = `${val} มม.`;
+      updateMarginButtonsUI(val);
+      updatePreview();
+    }
+
+    function handleCustomMarginInput() {
+      let val = parseFloat(customMarginInput.value) || 0;
+      if (val < 0) val = 0;
+      layoutConfig.marginMm = val;
+      marginValText.textContent = `${val} มม.`;
+      updateMarginButtonsUI(val);
+      updatePreview();
+    }
+
+    function updateMarginButtonsUI(val) {
+      document.querySelectorAll('.margin-btn').forEach(btn => {
+        const bVal = parseInt(btn.textContent);
+        if (bVal === val) {
+          btn.className = 'margin-btn flex-1 py-1 rounded-lg bg-indigo-600 text-white text-xs font-medium cursor-pointer transition shadow-xs';
+        } else {
+          btn.className = 'margin-btn flex-1 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer transition';
+        }
+      });
+    }
+
+    function setFitMode(mode) {
+      layoutConfig.fitMode = mode;
+      ['fit', 'fill', 'stretch'].forEach(m => {
+        const btn = document.getElementById(`fitMode_${m}`);
+        if (m === mode) {
+          btn.className = 'p-2 rounded-xl border text-left transition cursor-pointer bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-xs';
+        } else {
+          btn.className = 'p-2 rounded-xl border text-left transition cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600';
+        }
+      });
+      updatePreview();
+    }
+
+    // Pagination for Preview
+    function prevPreviewPage() {
+      if (currentPreviewPage > 0) {
+        currentPreviewPage--;
+        updatePreview();
+      }
+    }
+
+    function nextPreviewPage() {
+      const totalP = getTotalPages();
+      if (currentPreviewPage < totalP - 1) {
+        currentPreviewPage++;
+        updatePreview();
+      }
+    }
+
+    // Real-time Preview Renderer
+    function updatePreview() {
+      let w_mm = 210, h_mm = 297;
+      if (layoutConfig.size === 'CUSTOM') {
+        const unit = document.querySelector('input[name="customUnit"]:checked')?.value || 'mm';
+        let cw = parseFloat(customWidthInput.value) || 210;
+        let ch = parseFloat(customHeightInput.value) || 297;
+        if (unit === 'inch') {
+          cw *= 25.4;
+          ch *= 25.4;
+        }
+        layoutConfig.customWidthMm = cw;
+        layoutConfig.customHeightMm = ch;
+        w_mm = cw;
+        h_mm = ch;
+      } else if (PAPER_DIMENSIONS[layoutConfig.size]) {
+        [w_mm, h_mm] = PAPER_DIMENSIONS[layoutConfig.size];
+      }
+
+      // Apply Orientation
+      let paperW = w_mm;
+      let paperH = h_mm;
+      if (layoutConfig.orientation === 'landscape') {
+        paperW = Math.max(w_mm, h_mm);
+        paperH = Math.min(w_mm, h_mm);
+      } else {
+        paperW = Math.min(w_mm, h_mm);
+        paperH = Math.max(w_mm, h_mm);
+      }
+
+      // Stage bounds
+      const viewport = document.getElementById('previewViewport');
+      const availW = Math.max(250, viewport.clientWidth - 80);
+      const availH = Math.max(250, viewport.clientHeight - 80);
+
+      const paperAspect = paperW / paperH;
+      let sheetW, sheetH;
+      if (availW / availH > paperAspect) {
+        sheetH = Math.min(availH, 640);
+        sheetW = sheetH * paperAspect;
+      } else {
+        sheetW = Math.min(availW, 640);
+        sheetH = sheetW / paperAspect;
+      }
+
+      paperSheet.style.width = `${sheetW * zoomScale}px`;
+      paperSheet.style.height = `${sheetH * zoomScale}px`;
+
+      // Margin percentage
+      const marginMm = layoutConfig.marginMm || 0;
+      const marginRatioX = (marginMm / paperW) * 100;
+      const marginRatioY = (marginMm / paperH) * 100;
+
+      paperMarginBox.style.top = `${marginRatioY}%`;
+      paperMarginBox.style.bottom = `${marginRatioY}%`;
+      paperMarginBox.style.left = `${marginRatioX}%`;
+      paperMarginBox.style.right = `${marginRatioX}%`;
+
+      // Setup Grid in DOM
+      const cols = layoutConfig.gridCols;
+      const rows = layoutConfig.gridRows;
+      const gapMm = layoutConfig.gapMm || 0;
+
+      gridContainer.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      gridContainer.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+      // Convert gap mm to relative percentage or px
+      const scaleFactor = (sheetW * zoomScale) / paperW;
+      gridContainer.style.gap = `${gapMm * scaleFactor}px`;
+
+      // Get images for current preview page
+      const ppp = cols * rows;
+      const totalP = getTotalPages();
+      if (currentPreviewPage >= totalP) currentPreviewPage = Math.max(0, totalP - 1);
+
+      const startIndex = currentPreviewPage * ppp;
+      const pageImages = imageList.slice(startIndex, startIndex + ppp);
+
+      gridContainer.innerHTML = '';
+      if (imageList.length === 0) {
+        emptyGridPrompt.classList.remove('hidden');
+      } else {
+        emptyGridPrompt.classList.add('hidden');
+        // Render cells
+        for (let i = 0; i < ppp; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'w-full h-full relative overflow-hidden flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-200/40 rounded-sm bg-slate-50/50';
+          
+          if (i < pageImages.length) {
+            const imgData = pageImages[i];
+            const imgEl = document.createElement('img');
+            imgEl.src = imgData.previewUrl;
+            imgEl.className = 'w-full h-full';
+
+            if (layoutConfig.fitMode === 'fill') {
+              imgEl.style.objectFit = 'cover';
+            } else if (layoutConfig.fitMode === 'stretch') {
+              imgEl.style.objectFit = 'fill';
+            } else {
+              imgEl.style.objectFit = 'contain';
+            }
+            cell.appendChild(imgEl);
+
+            // Small cell index tag
+            const tag = document.createElement('span');
+            tag.className = 'absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono font-bold pointer-events-none shadow-xs';
+            tag.textContent = `#${startIndex + i + 1}`;
+            cell.appendChild(tag);
+          } else {
+            // Empty placeholder cell
+            cell.innerHTML = '<span class="text-[9px] text-slate-300 font-mono">ว่าง</span>';
+          }
+          gridContainer.appendChild(cell);
+        }
+      }
+
+      // Update Spec Labels
+      const orientLabel = layoutConfig.orientation === 'landscape' ? 'แนวนอน' : 'แนวตั้ง';
+      previewPageSpec.textContent = `${layoutConfig.size} ${orientLabel} (${Math.round(paperW)} × ${Math.round(paperH)} มม.)`;
+      previewGridSpec.textContent = `Grid: ${cols}×${rows} (${ppp} รูป/หน้า) | ขอบ: ${marginMm} มม.`;
+      previewPaginationSpec.textContent = `หน้า ${currentPreviewPage + 1} / ${totalP} (รวม ${imageList.length} รูป)`;
+      pageNavText.textContent = `${currentPreviewPage + 1} / ${totalP}`;
+      paperCornerLabel.textContent = `${layoutConfig.size} (${paperW.toFixed(0)}x${paperH.toFixed(0)}mm)`;
+      gridSummaryBadge.textContent = `${ppp} รูป/หน้า (${cols}×${rows})`;
+    }
+
+    // Zoom Controls
+    function adjustZoom(delta) {
+      zoomScale = Math.max(0.4, Math.min(2.0, zoomScale + delta));
+      document.getElementById('zoomLevelText').textContent = `${Math.round(zoomScale * 100)}%`;
+      updatePreview();
+    }
+
+    function resetZoom() {
+      zoomScale = 1.0;
+      document.getElementById('zoomLevelText').textContent = '100%';
+      updatePreview();
+    }
+
+    // ==========================================
+    // Direct Browser Print (พิมพ์ตรงจากหน้าเว็บ)
+    // ==========================================
+    function triggerDirectPrint() {
+      if (imageList.length === 0) {
+        showToast('กรุณาเพิ่มรูปภาพก่อนสั่งพิมพ์', '⚠️');
+        return;
+      }
+
+      let w_mm = 210, h_mm = 297;
+      if (layoutConfig.size === 'CUSTOM') {
+        w_mm = layoutConfig.customWidthMm;
+        h_mm = layoutConfig.customHeightMm;
+      } else if (PAPER_DIMENSIONS[layoutConfig.size]) {
+        [w_mm, h_mm] = PAPER_DIMENSIONS[layoutConfig.size];
+      }
+
+      let paperW = w_mm;
+      let paperH = h_mm;
+      if (layoutConfig.orientation === 'landscape') {
+        paperW = Math.max(w_mm, h_mm);
+        paperH = Math.min(w_mm, h_mm);
+      } else {
+        paperW = Math.min(w_mm, h_mm);
+        paperH = Math.max(w_mm, h_mm);
+      }
+
+      // Configure CSS @page for browser printer dialog
+      const dynamicPrintStyle = document.getElementById('dynamicPrintStyle');
+      dynamicPrintStyle.textContent = `
+        @page {
+          size: ${paperW}mm ${paperH}mm;
+          margin: 0;
+        }
+      `;
+
+      // Build DOM for printing
+      const printContainer = document.getElementById('directPrintContainer');
+      printContainer.innerHTML = '';
+
+      const cols = layoutConfig.gridCols;
+      const rows = layoutConfig.gridRows;
+      const ppp = cols * rows;
+      const totalP = getTotalPages();
+      const marginMm = layoutConfig.marginMm || 0;
+      const gapMm = layoutConfig.gapMm || 0;
+
+      for (let p = 0; p < totalP; p++) {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'print-page-sheet';
+        pageDiv.style.width = `${paperW}mm`;
+        pageDiv.style.height = `${paperH}mm`;
+        pageDiv.style.padding = `${marginMm}mm`;
+        pageDiv.style.boxSizing = 'border-box';
+        pageDiv.style.background = 'white';
+        pageDiv.style.position = 'relative';
+
+        const gridDiv = document.createElement('div');
+        gridDiv.style.width = '100%';
+        gridDiv.style.height = '100%';
+        gridDiv.style.display = 'grid';
+        gridDiv.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        gridDiv.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+        gridDiv.style.gap = `${gapMm}mm`;
+
+        const startIndex = p * ppp;
+        const pageImgs = imageList.slice(startIndex, startIndex + ppp);
+
+        for (let i = 0; i < ppp; i++) {
+          const cell = document.createElement('div');
+          cell.style.width = '100%';
+          cell.style.height = '100%';
+          cell.style.overflow = 'hidden';
+          cell.style.display = 'flex';
+          cell.style.alignItems = 'center';
+          cell.style.justifyContent = 'center';
+
+          if (i < pageImgs.length) {
+            const imgEl = document.createElement('img');
+            imgEl.src = pageImgs[i].previewUrl;
+            imgEl.style.width = '100%';
+            imgEl.style.height = '100%';
+            if (layoutConfig.fitMode === 'fill') {
+              imgEl.style.objectFit = 'cover';
+            } else if (layoutConfig.fitMode === 'stretch') {
+              imgEl.style.objectFit = 'fill';
+            } else {
+              imgEl.style.objectFit = 'contain';
+            }
+            cell.appendChild(imgEl);
+          }
+          gridDiv.appendChild(cell);
+        }
+
+        pageDiv.appendChild(gridDiv);
+        printContainer.appendChild(pageDiv);
+      }
+
+      // Small delay to ensure browser paint, then open native print dialog
+      setTimeout(() => {
+        window.print();
+      }, 200);
+    }
+
+    // ==========================================
+    // Generate & Download PDF File via Backend
+    // ==========================================
+    async function generatePdf() {
+      if (imageList.length === 0) {
+        showToast('กรุณาเพิ่มรูปภาพก่อนสร้าง PDF', '⚠️');
+        return;
+      }
+
+      let filename = document.getElementById('pdfFilenameInput').value.trim() || 'pic_to_pdf_document.pdf';
+      if (!filename.endsWith('.pdf')) filename += '.pdf';
+
+      setGeneratingLoading(true);
+
+      try {
+        const cols = layoutConfig.gridCols;
+        const rows = layoutConfig.gridRows;
+        const ppp = cols * rows;
+        const totalP = getTotalPages();
+
+        // Construct pages payload for backend
+        const pagesPayload = [];
+        for (let p = 0; p < totalP; p++) {
+          const startIndex = p * ppp;
+          const pageImages = imageList.slice(startIndex, startIndex + ppp).map(item => item.source);
+          pagesPayload.push({
+            images: pageImages,
+            grid_cols: cols,
+            grid_rows: rows,
+            gap_mm: layoutConfig.gapMm,
+            size: layoutConfig.size,
+            orientation: layoutConfig.orientation,
+            margin_mm: layoutConfig.marginMm,
+            fit_mode: layoutConfig.fitMode,
+            custom_width_mm: layoutConfig.customWidthMm,
+            custom_height_mm: layoutConfig.customHeightMm
+          });
+        }
+
+        const resp = await fetch('/api/generate-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'ไม่รกจอ Pic to PDF Document',
+            filename: filename,
+            pages: pagesPayload
+          })
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+          const link = document.createElement('a');
+          link.href = `data:application/pdf;base64,${data.pdf_base64}`;
+          link.download = data.filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          showToast(`สร้างไฟล์ PDF สำเร็จ! (${(data.file_size / 1024).toFixed(1)} KB)`, '🎉');
+        } else {
+          showToast(data.error || 'เกิดข้อผิดพลาดในการสร้าง PDF', '❌');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('การเชื่อมต่อขัดข้อง', '❌');
+      } finally {
+        setGeneratingLoading(false);
+      }
+    }
+
+    function setFetchLoading(isLoading) {
+      const btn = document.getElementById('btnFetchUrl');
+      const text = document.getElementById('fetchBtnText');
+      const spinner = document.getElementById('fetchSpinner');
+      if (isLoading) {
+        btn.disabled = true;
+        text.textContent = 'กำลังโหลด...';
+        spinner.classList.remove('hidden');
+      } else {
+        btn.disabled = false;
+        text.textContent = '+ เพิ่มรูป';
+        spinner.classList.add('hidden');
+      }
+    }
+
+    function setGeneratingLoading(isLoading) {
+      const btn = document.getElementById('btnGeneratePdf');
+      const text = document.getElementById('genBtnText');
+      const spinner = document.getElementById('genSpinner');
+      const btnTop = document.getElementById('btnExportTop');
+
+      if (isLoading) {
+        btn.disabled = true;
+        btnTop.disabled = true;
+        text.textContent = 'กำลังประมวลผล PDF...';
+        spinner.classList.remove('hidden');
+      } else {
+        btn.disabled = false;
+        btnTop.disabled = false;
+        text.textContent = 'บันทึกเป็นไฟล์ PDF (Save as PDF file)';
+        spinner.classList.add('hidden');
+      }
+    }
+
+    function showToast(msg, icon = 'ℹ️') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    window.addEventListener('resize', updatePreview);
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
